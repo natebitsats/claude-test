@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
+    }
+
+    .container {
+      position: relative;
+      width: min(100vh, 100vw);
+      height: min(100vh, 100vw);
+      aspect-ratio: 1/1;
+    }
+
+    #background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      -webkit-image-rendering: pixelated;
+      z-index: 1;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      -webkit-image-rendering: pixelated;
+      z-index: 2;
+    }
+
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    #door-path {
+      cursor: pointer;
+      pointer-events: fill;
+      fill: rgba(0,0,0,0);
+    }
+
+    .popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 20;
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-overlay.visible { display: flex; }
+
+    .popup {
+      position: relative;
+      max-width: 80vw;
+      max-height: 80vh;
+    }
+    .popup img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 8px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .popup-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 28px;
+      height: 28px;
+      background: #fff;
+      color: #333;
+      border: none;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .popup-close:hover { background: #ddd; }
+
+    .back-link {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      z-index: 10;
+      color: #999;
+      text-decoration: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 0.85rem;
+    }
+    .back-link:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+<a href="../" class="back-link">&#8592; Back</a>
+<div class="popup-overlay" id="popup">
+  <div class="popup">
+    <button class="popup-close" id="popup-close">&#10005;</button>
+    <img src="98542_bitmap.png" alt="Bitmap" />
+  </div>
+</div>
+<div class="container" id="gif-container">
+    <img src="hut-v1.png" id="background" />
+    <canvas id="door-canvas" width="256" height="256"></canvas>
+    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+        viewBox="0 0 256 256" style="enable-background:new 0 0 256 256;" xml:space="preserve">
+        <g transform="translate(0.000000,256.000000) scale(0.100000,-0.100000)">
+            <path id="door-path" d="M982,922c-62.9-17.9-52.7-304.2-52-419c216-17.2,257.6-123.7,238,155c-3,151-7,193-21,219
+                C1107,952,1035,972,982,922z"/>
+        </g>
+    </svg>
+</div>
+
+<script>
+  const canvas = document.getElementById('door-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const doorPath = document.getElementById('door-path');
+  const popup = document.getElementById('popup');
+  const popupClose = document.getElementById('popup-close');
+
+  const FRAME_COUNT = 8;
+  const FRAME_SIZE = 256;
+  const FRAME_DELAY = 100; // ms between frames
+
+  let isPlaying = false;
+  let currentFrame = 0;
+  let animationId = null;
+  let lastFrameTime = 0;
+
+  const spritesheet = new Image();
+  spritesheet.src = 'door-spritesheet.png';
+
+  function drawFrame(frameIndex) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(
+      spritesheet,
+      frameIndex * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE,
+      0, 0, canvas.width, canvas.height
+    );
+  }
+
+  function playOpen() {
+    if (isPlaying) return;
+    isPlaying = true;
+    lastFrameTime = performance.now();
+
+    function animateOpen(timestamp) {
+      if (timestamp - lastFrameTime >= FRAME_DELAY) {
+        currentFrame++;
+        if (currentFrame >= FRAME_COUNT) {
+          currentFrame = FRAME_COUNT - 1;
+          isPlaying = false;
+          popup.classList.add('visible');
+          return;
+        }
+        drawFrame(currentFrame);
+        lastFrameTime = timestamp;
+      }
+      requestAnimationFrame(animateOpen);
+    }
+    requestAnimationFrame(animateOpen);
+  }
+
+  function playClose() {
+    isPlaying = true;
+    lastFrameTime = performance.now();
+
+    function animateClose(timestamp) {
+      if (timestamp - lastFrameTime >= FRAME_DELAY) {
+        currentFrame--;
+        if (currentFrame < 0) {
+          currentFrame = 0;
+          isPlaying = false;
+          drawFrame(0);
+          return;
+        }
+        drawFrame(currentFrame);
+        lastFrameTime = timestamp;
+      }
+      requestAnimationFrame(animateClose);
+    }
+    requestAnimationFrame(animateClose);
+  }
+
+  spritesheet.onload = () => {
+    drawFrame(0);
+  };
+
+  doorPath.addEventListener('click', () => {
+    if (isPlaying || currentFrame !== 0) return;
+    playOpen();
+  });
+
+  popupClose.addEventListener('click', () => {
+    popup.classList.remove('visible');
+    playClose();
+  });
+
+  doorPath.addEventListener('mouseenter', () => {
+    if (currentFrame === 0 && !isPlaying) {
+      drawFrame(1);
+    }
+  });
+
+  doorPath.addEventListener('mouseleave', () => {
+    if (currentFrame === 0 && !isPlaying) {
+      drawFrame(0);
+    }
+  });
+</script>
+
+</body>
+</html>
