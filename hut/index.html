@@ -78,15 +78,11 @@
 
     .popup {
       position: relative;
-      max-width: 80vw;
-      max-height: 80vh;
-    }
-    .popup img {
-      max-width: 100%;
-      max-height: 80vh;
-      border-radius: 8px;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
+      background: #1a1a2e;
+      border: 2px solid #444;
+      border-radius: 12px;
+      padding: 30px;
+      min-width: 220px;
     }
     .popup-close {
       position: absolute;
@@ -107,6 +103,50 @@
     }
     .popup-close:hover { background: #ddd; }
 
+    .menu-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 20px;
+      margin-bottom: 10px;
+      background: #667eea;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .menu-btn:last-child { margin-bottom: 0; }
+    .menu-btn:hover { background: #5a6fd6; }
+
+    .menu-back {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 0;
+      margin-bottom: 14px;
+      font-family: inherit;
+    }
+    .menu-back:hover { color: #fff; }
+
+    .popup-panel { display: none; }
+    .popup-panel.active { display: block; }
+
+    .bitmap-view {
+      display: none;
+      text-align: center;
+    }
+    .bitmap-view.active { display: block; }
+    .bitmap-view img {
+      max-width: 60vw;
+      max-height: 65vh;
+      border-radius: 8px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
     .back-link {
       position: fixed;
       bottom: 16px;
@@ -126,7 +166,24 @@
 <div class="popup-overlay" id="popup">
   <div class="popup">
     <button class="popup-close" id="popup-close">&#10005;</button>
-    <img src="98542_bitmap.png" alt="Bitmap" />
+
+    <div class="popup-panel active" id="panel-main">
+      <button class="menu-btn" id="btn-bitmap">Bitmap Address</button>
+      <button class="menu-btn" id="btn-download">Download</button>
+      <button class="menu-btn" id="btn-gallery">View Gallery</button>
+    </div>
+
+    <div class="popup-panel" id="panel-download">
+      <button class="menu-back" id="back-download">&#8592; Back</button>
+      <button class="menu-btn">PFP</button>
+      <button class="menu-btn">Banner</button>
+      <button class="menu-btn">Screensaver</button>
+    </div>
+
+    <div class="bitmap-view" id="panel-bitmap">
+      <button class="menu-back" id="back-bitmap">&#8592; Back</button>
+      <img src="98542_bitmap.png" alt="Bitmap" />
+    </div>
   </div>
 </div>
 <div class="container" id="gif-container">
@@ -149,13 +206,16 @@
   const popup = document.getElementById('popup');
   const popupClose = document.getElementById('popup-close');
 
+  const panelMain = document.getElementById('panel-main');
+  const panelDownload = document.getElementById('panel-download');
+  const panelBitmap = document.getElementById('panel-bitmap');
+
   const FRAME_COUNT = 8;
   const FRAME_SIZE = 256;
-  const FRAME_DELAY = 100; // ms between frames
+  const FRAME_DELAY = 100;
 
   let isPlaying = false;
   let currentFrame = 0;
-  let animationId = null;
   let lastFrameTime = 0;
 
   const spritesheet = new Image();
@@ -168,6 +228,19 @@
       frameIndex * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE,
       0, 0, canvas.width, canvas.height
     );
+  }
+
+  function showPanel(panel) {
+    panelMain.classList.remove('active');
+    panelDownload.classList.remove('active');
+    panelBitmap.classList.remove('active');
+    panel.classList.add('active');
+  }
+
+  function closePopup() {
+    popup.classList.remove('visible');
+    showPanel(panelMain);
+    playClose();
   }
 
   function playOpen() {
@@ -213,30 +286,26 @@
     requestAnimationFrame(animateClose);
   }
 
-  spritesheet.onload = () => {
-    drawFrame(0);
-  };
+  spritesheet.onload = () => drawFrame(0);
 
   doorPath.addEventListener('click', () => {
     if (isPlaying || currentFrame !== 0) return;
     playOpen();
   });
 
-  popupClose.addEventListener('click', () => {
-    popup.classList.remove('visible');
-    playClose();
-  });
+  popupClose.addEventListener('click', closePopup);
+
+  document.getElementById('btn-bitmap').addEventListener('click', () => showPanel(panelBitmap));
+  document.getElementById('btn-download').addEventListener('click', () => showPanel(panelDownload));
+  document.getElementById('back-bitmap').addEventListener('click', () => showPanel(panelMain));
+  document.getElementById('back-download').addEventListener('click', () => showPanel(panelMain));
 
   doorPath.addEventListener('mouseenter', () => {
-    if (currentFrame === 0 && !isPlaying) {
-      drawFrame(1);
-    }
+    if (currentFrame === 0 && !isPlaying) drawFrame(1);
   });
 
   doorPath.addEventListener('mouseleave', () => {
-    if (currentFrame === 0 && !isPlaying) {
-      drawFrame(0);
-    }
+    if (currentFrame === 0 && !isPlaying) drawFrame(0);
   });
 </script>
 
