@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2 Witch Way</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0ece4;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .header {
+      text-align: center;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 20px 20px;
+    }
+    .header h1 {
+      font-size: 2.5rem;
+      color: #1a1a2e;
+      margin-bottom: 20px;
+    }
+    .header img {
+      width: 100%;
+      border-radius: 12px;
+      border: 3px solid #1a1a2e;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .gallery-item {
+      position: relative;
+      cursor: pointer;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 4px solid #667eea;
+      background: #1a1a2e;
+      aspect-ratio: 1/1;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .gallery-item:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 24px rgba(102, 126, 234, 0.4);
+    }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.2s;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .gallery-item:hover img {
+      opacity: 0.85;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.visible { display: flex; }
+
+    .modal {
+      position: relative;
+      background: #1a1a2e;
+      border: 2px solid #444;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 90vw;
+      max-height: 90vh;
+      text-align: center;
+    }
+    .modal h2 {
+      color: #fff;
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+    }
+    .modal img {
+      width: min(998px, 80vw, 65vh);
+      height: min(998px, 80vw, 65vh);
+      border-radius: 8px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .modal-close {
+      position: absolute;
+      top: -12px; right: -12px;
+      width: 28px; height: 28px;
+      background: #fff;
+      color: #333;
+      border: none;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .modal-close:hover { background: #ddd; }
+
+    .back-link {
+      position: fixed;
+      bottom: 16px; left: 16px;
+      z-index: 10;
+      color: #1a1a2e;
+      text-decoration: none;
+      font-size: 0.85rem;
+      background: rgba(255,255,255,0.7);
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .back-link:hover { background: rgba(255,255,255,0.9); }
+
+    .nav-arrow {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      text-decoration: none;
+      font-size: 2rem;
+      color: #1a1a2e;
+      background: rgba(255,255,255,0.7);
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: background 0.2s;
+    }
+    .nav-arrow:hover { background: rgba(255,255,255,0.95); }
+    .nav-arrow.left { left: 16px; }
+    .nav-arrow.right { right: 16px; }
+
+    .map-section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .map-section h2 {
+      text-align: center;
+      color: #1a1a2e;
+      font-size: 1.3rem;
+      margin-bottom: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .map-section h2:hover { opacity: 0.7; }
+    .map-section h2 .toggle { font-size: 0.8rem; margin-left: 6px; }
+    .map-container.collapsed { display: none; }
+    .map-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .map-container img {
+      width: 100%;
+      display: block;
+      border-radius: 8px;
+    }
+    .map-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    .map-plot {
+      position: absolute;
+      border: 2px solid transparent;
+      cursor: default;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .map-plot.active {
+      cursor: pointer;
+      opacity: 0.3;
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .map-plot.active:hover {
+      opacity: 0.6;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .map-plot.current {
+      opacity: 1;
+      background: rgba(230, 0, 255, 0.5);
+      border-color: #e600ff;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { border-color: #e600ff; }
+      50% { border-color: #fff; }
+    }
+    .map-tooltip {
+      display: none;
+      position: absolute;
+      background: #1a1a2e;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 5;
+      transform: translate(-50%, -100%);
+    }
+  </style>
+</head>
+<body>
+
+<a href="../" class="back-link">&#8592; Back</a>
+<a href="../1-witch-way/" class="nav-arrow left">&#8249;</a>
+<a href="../0-witch-way/" class="nav-arrow right">&#8250;</a>
+
+<div class="header">
+  <h1>2 Witch Way</h1>
+  <img src="../assets/discord banner 400x.png" alt="Banner" />
+</div>
+
+<div class="map-section">
+  <h2 id="map-toggle">Witch Way Map <span class="toggle">&#9654;</span></h2>
+  <div class="map-container collapsed" id="map-container">
+    <p style="text-align: center; color: #666; font-size: 1rem; margin-bottom: 10px;">2.98542.bitmap</p>
+    <div style="position: relative;">
+      <img src="../assets/maps/witch-way-geo-map.svg" alt="Witch Way Map" />
+      <div class="map-overlay" id="map-overlay"></div>
+      <div class="map-tooltip" id="map-tooltip"></div>
+    </div>
+  </div>
+</div>
+
+<div class="gallery-grid" id="gallery">
+  <div class="gallery-item" onclick="openModal(this)">
+    <img src="../assets/gallery_images/2fc28d0fc53e12a768e0eb7c5d854412228bb9c541077aa56e288e6bbf7c2702i0.png" alt="Ordinal" />
+  </div>
+  <div class="gallery-item" onclick="openModal(this)">
+    <img src="../assets/gallery_images/9553-1758455789225 2.png" alt="9553" />
+  </div>
+  <div class="gallery-item" onclick="openModal(this)">
+    <img src="../assets/gallery_images/Witch-gb-no-bg.png" alt="Witch" />
+  </div>
+  <div class="gallery-item" onclick="openModal(this)">
+    <img src="../assets/gallery_images/c5b65f0a7270384a3c059494ce2bc1d7764f45e4b239c98da90fc10c2a855104i0 2.gif" alt="Animated Ordinal" />
+  </div>
+  <div class="gallery-item" onclick="openModal(this)">
+    <img src="../assets/gallery_images/flora-form.png" alt="Flora Form" />
+  </div>
+  <div class="gallery-item" onclick="openModal(this)">
+    <img src="../assets/gallery_images/witchmas.webp" alt="Witchmas" />
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">&#10005;</button>
+    <h2 id="modal-title"></h2>
+    <img id="modal-img" src="" alt="" />
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('modal');
+  const modalImg = document.getElementById('modal-img');
+  const modalTitle = document.getElementById('modal-title');
+  const modalClose = document.getElementById('modal-close');
+
+  function openModal(item) {
+    const img = item.querySelector('img');
+    modalImg.src = img.src;
+    modalImg.alt = img.alt;
+    modalTitle.textContent = img.alt;
+    modal.classList.add('visible');
+  }
+
+  modalClose.addEventListener('click', () => modal.classList.remove('visible'));
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('visible');
+  });
+
+  // Map toggle
+  const mapToggle = document.getElementById('map-toggle');
+  const mapContainer = document.getElementById('map-container');
+  mapToggle.addEventListener('click', () => {
+    mapContainer.classList.toggle('collapsed');
+    mapToggle.querySelector('.toggle').innerHTML = mapContainer.classList.contains('collapsed') ? '&#9654;' : '&#9660;';
+  });
+
+  // Map navigation
+  const CURRENT_PLOT = 2;
+  const ACTIVE_PLOTS = [0, 1, 2];
+  const COLS = 11, ROWS = 12;
+  const SVG_SIZE = 1024;
+  const FIRST_X = 189.82, FIRST_Y = 158.65;
+  const CELL = 47.22, COL_STEP = 59.7, ROW_STEP = 59.71;
+
+  const overlay = document.getElementById('map-overlay');
+  const tooltip = document.getElementById('map-tooltip');
+
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    const x = ((FIRST_X + col * COL_STEP) / SVG_SIZE) * 100;
+    const y = ((FIRST_Y + row * ROW_STEP) / SVG_SIZE) * 100;
+    const w = (CELL / SVG_SIZE) * 100;
+
+    const el = document.createElement('a');
+    el.className = 'map-plot';
+    el.style.left = x + '%';
+    el.style.top = y + '%';
+    el.style.width = w + '%';
+    el.style.height = w + '%';
+
+    if (i === CURRENT_PLOT) {
+      el.classList.add('current');
+    } else if (ACTIVE_PLOTS.includes(i)) {
+      el.classList.add('active');
+      el.href = '../' + i + '-witch-way/';
+    }
+
+    el.addEventListener('mouseenter', (e) => {
+      tooltip.textContent = i + ' Witch Way';
+      tooltip.style.display = 'block';
+      const rect = el.getBoundingClientRect();
+      const containerRect = overlay.getBoundingClientRect();
+      tooltip.style.left = (rect.left - containerRect.left + rect.width / 2) + 'px';
+      tooltip.style.top = (rect.top - containerRect.top - 4) + 'px';
+    });
+    el.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+    overlay.appendChild(el);
+  }
+</script>
+
+</body>
+</html>
